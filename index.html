@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NarrativeArchive イベント作成</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --line: #d8deea;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #b91c1c;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef3ff, var(--bg));
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      line-height: 1.7;
+    }
+
+    header, main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    header { padding-top: 28px; }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      letter-spacing: .02em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 860px) {
+      .grid.two { grid-template-columns: 1.05fr .95fr; }
+    }
+
+    .card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px 12px;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: #fff;
+      color: var(--text);
+    }
+
+    button.primary {
+      border-color: transparent;
+      background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 14px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--muted);
+      background: #fbfcff;
+      white-space: pre-wrap;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: rgba(22, 101, 52, .28);
+      background: rgba(22, 101, 52, .05);
+    }
+
+    .status.warn {
+      color: var(--warn);
+      border-color: rgba(146, 64, 14, .28);
+      background: rgba(146, 64, 14, .05);
+    }
+
+    .status.error {
+      color: var(--danger);
+      border-color: rgba(185, 28, 28, .28);
+      background: rgba(185, 28, 28, .05);
+    }
+
+    .urlbox {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .levelCards {
+      display: grid;
+      gap: 10px;
+    }
+
+    .levelCard {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfcff;
+    }
+
+    .levelCard strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .levelCard span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mini {
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NarrativeArchive イベント作成</h1>
+    <p class="lead">主催者がイベントを作成し、参加者用URL・全データ閲覧用URL・管理用URLを生成します。</p>
+  </header>
+
+  <main class="grid two">
+    <section class="card">
+      <h2>イベント作成</h2>
+
+      <form id="eventForm">
+        <div class="field">
+          <label for="eventName">イベント名</label>
+          <input id="eventName" type="text" required placeholder="例：飯地町まちあるき2026" />
+          <div class="hint">参加者の入力データをまとめる単位です。</div>
+        </div>
+
+        <div class="field">
+          <label for="description">説明</label>
+          <textarea id="description" placeholder="例：五毛座周辺で見たこと、聞いたこと、感じたことを記録してください。"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="detailLevel">参加者入力ページの初期詳細度</label>
+          <select id="detailLevel" required>
+            <option value="simple">簡易版</option>
+            <option value="recommended" selected>推奨版</option>
+            <option value="detailed">詳細版</option>
+          </select>
+          <div class="hint">参加者ページ側では、参加者が任意で詳細度を変更できます。</div>
+        </div>
+
+        <div class="actions">
+          <button id="btnCreate" class="primary" type="submit">イベントを作成</button>
+          <button id="btnReset" type="button">リセット</button>
+        </div>
+      </form>
+
+      <div id="status" class="status warn">未作成です。</div>
+    </section>
+
+    <aside class="card">
+      <h2>詳細度の意味</h2>
+      <div class="levelCards">
+        <div class="levelCard">
+          <strong>簡易版</strong>
+          <span>タイトル、場所、日時、何があったか、公開可否、evidence添付を中心にした最小入力。</span>
+        </div>
+        <div class="levelCard">
+          <strong>推奨版</strong>
+          <span>主体、行為、環境、ナラティブの種、第1層語彙まで入力しやすい標準入力。</span>
+        </div>
+        <div class="levelCard">
+          <strong>詳細版</strong>
+          <span>evidenceごとのOAIS系メタデータ、撮影方法、関係種別なども扱う研究室向け入力。</span>
+        </div>
+      </div>
+      <div class="status warn" style="margin-top:14px;">
+        このページは events テーブルにイベントを作成します。参加者投稿は participant.html、全データ確認は viewer.html、管理機能は admin.html で扱います。
+      </div>
+    </aside>
+
+    <section class="card" style="grid-column:1 / -1;">
+      <h2>生成されたURL</h2>
+      <div class="field">
+        <label for="participantUrl">参加者用URL</label>
+        <textarea id="participantUrl" class="urlbox" readonly placeholder="イベント作成後に生成されます"></textarea>
+        <div class="hint">参加者が体験ナラティブとevidenceを投稿するページです。</div>
+      </div>
+      <div class="field">
+        <label for="viewerUrl">全データ閲覧用URL</label>
+        <textarea id="viewerUrl" class="urlbox" readonly placeholder="イベント作成後に生成されます"></textarea>
+        <div class="hint">イベントに属する投稿データを確認するページです。現在の viewer.html の仕様に従います。</div>
+      </div>
+      <div class="field">
+        <label for="adminUrl">管理用URL</label>
+        <textarea id="adminUrl" class="urlbox" readonly placeholder="イベント作成後に生成されます"></textarea>
+        <div class="hint">管理用URLには admin_token が入ります。第三者に共有しないでください。</div>
+      </div>
+      <div class="actions">
+        <button id="btnCopyParticipant" type="button">参加者用URLをコピー</button>
+        <button id="btnCopyViewer" type="button">閲覧用URLをコピー</button>
+        <button id="btnCopyAdmin" type="button">管理用URLをコピー</button>
+      </div>
+      <div class="mini">生成形式：participant.html#event_id=... / viewer.html#event_id=... / admin.html#event_id=...&token=...</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://lilecmqnmilzviydnlwt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_hKj83fxX-DeyVbFN21dqQQ_Ooxbhqrt";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(text, kind = "warn") {
+      const el = $("status");
+      el.textContent = text;
+      el.className = `status ${kind}`;
+    }
+
+    function randomToken() {
+      const arr = new Uint8Array(24);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function buildUrl(page, paramsObj) {
+      const basePath = location.pathname.replace(/[^/]*$/, page);
+      const base = `${location.origin}${basePath}`;
+      const params = new URLSearchParams(paramsObj);
+      return `${base}#${params.toString()}`;
+    }
+
+    async function copyText(text, label) {
+      if (!text) {
+        setStatus(`${label}がまだ生成されていません。`, "warn");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus(`${label}をコピーしました。`, "ok");
+      } catch {
+        setStatus("コピーに失敗しました。手動で選択してコピーしてください。", "error");
+      }
+    }
+
+    $("eventForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const eventName = $("eventName").value.trim();
+      const description = $("description").value.trim() || null;
+      const detailLevel = $("detailLevel").value;
+      const adminToken = randomToken();
+
+      if (!eventName) {
+        setStatus("イベント名を入力してください。", "warn");
+        return;
+      }
+
+      $("btnCreate").disabled = true;
+      setStatus("イベントを作成しています…", "warn");
+
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .insert({
+            event_name: eventName,
+            description,
+            detail_level: detailLevel,
+            admin_token: adminToken,
+            is_active: true
+          })
+          .select("id, event_name, detail_level, admin_token")
+          .single();
+
+        if (error) throw error;
+
+        const participantUrl = buildUrl("participant.html", {
+          event_id: data.id,
+          level: data.detail_level
+        });
+
+        const viewerUrl = buildUrl("viewer.html", {
+          event_id: data.id
+        });
+
+        const adminUrl = buildUrl("admin.html", {
+          event_id: data.id,
+          token: data.admin_token
+        });
+
+        $("participantUrl").value = participantUrl;
+        $("viewerUrl").value = viewerUrl;
+        $("adminUrl").value = adminUrl;
+
+        setStatus(`イベントを作成しました。\nイベントID: ${data.id}\n初期詳細度: ${data.detail_level}`, "ok");
+      } catch (err) {
+        console.error(err);
+        setStatus(`作成に失敗しました。\n${err.message || err}`, "error");
+      } finally {
+        $("btnCreate").disabled = false;
+      }
+    });
+
+    $("btnReset").addEventListener("click", () => {
+      $("eventForm").reset();
+      $("detailLevel").value = "recommended";
+      $("participantUrl").value = "";
+      $("viewerUrl").value = "";
+      $("adminUrl").value = "";
+      setStatus("未作成です。", "warn");
+    });
+
+    $("btnCopyParticipant").addEventListener("click", () => {
+      copyText($("participantUrl").value.trim(), "参加者用URL");
+    });
+
+    $("btnCopyViewer").addEventListener("click", () => {
+      copyText($("viewerUrl").value.trim(), "閲覧用URL");
+    });
+
+    $("btnCopyAdmin").addEventListener("click", () => {
+      copyText($("adminUrl").value.trim(), "管理用URL");
+    });
+  </script>
+</body>
+</html>

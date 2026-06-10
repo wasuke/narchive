@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NarrativeArchive 体験入力</title>
+  <style>
+    :root{--bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#667085;--line:#d8deea;--accent:#2563eb;--accent2:#1d4ed8;--ok:#166534;--warn:#92400e;--danger:#b91c1c;--shadow:0 12px 30px rgba(15,23,42,.08);--radius:18px}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#eef3ff,var(--bg));color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.7} header,main{max-width:1120px;margin:0 auto;padding:18px} header{padding-top:28px}.hero{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}h1{font-size:24px;margin:0 0 6px}.lead{color:var(--muted);margin:0;font-size:14px}.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}@media(max-width:980px){.grid{grid-template-columns:1fr}}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}h2{font-size:17px;margin:0 0 12px}.row{display:grid;gap:12px}.row.two{grid-template-columns:1fr 1fr}@media(max-width:720px){.row.two{grid-template-columns:1fr}}label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:11px 12px;font:inherit;color:var(--text)}textarea{min-height:92px;resize:vertical}.hint{margin-top:6px;color:var(--muted);font-size:12px}.req{color:var(--warn);font-weight:800;margin-left:4px}.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}button{border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);padding:10px 14px;font-weight:700;cursor:pointer;min-height:42px}button.primary{background:linear-gradient(180deg,var(--accent),var(--accent2));border-color:transparent;color:#fff}button[disabled]{opacity:.65;cursor:not-allowed}.ghost{background:transparent}.danger{color:var(--danger)}.status{border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:13px;color:var(--muted);background:#fbfcff;white-space:pre-wrap}.status.ok{color:var(--ok);border-color:rgba(22,101,52,.3);background:rgba(22,101,52,.05)}.status.warn{color:var(--warn);border-color:rgba(146,64,14,.3);background:rgba(146,64,14,.05)}.status.err{color:var(--danger);border-color:rgba(185,28,28,.3);background:rgba(185,28,28,.05)}.pillSet{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}@media(max-width:720px){.pillSet{grid-template-columns:1fr}}.pill{border:1px solid var(--line);border-radius:16px;padding:10px;background:#fff;display:flex;gap:8px;align-items:flex-start}.pill input{width:auto;margin-top:5px}.pill b{display:block}.pill small{display:block;color:var(--muted);font-weight:400}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{display:flex;gap:6px;align-items:center;border:1px solid var(--line);background:#fbfcff;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:600}.chip input{width:auto}.eventMeta{display:grid;gap:8px;font-size:13px;color:var(--muted)}.eventMeta strong{color:var(--text)}pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#dbeafe;border-radius:16px;padding:14px;font-size:12px;max-height:560px;overflow:auto}.sticky{position:sticky;top:12px}.evidenceCard{border:1px solid var(--line);border-radius:16px;padding:12px;background:#fbfcff;margin-top:10px}.evidenceHeader{display:flex;justify-content:space-between;gap:10px;align-items:center}.hiddenLevel{display:none!important}.small{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+<header>
+  <section class="hero">
+    <h1>NarrativeArchive 体験入力</h1>
+    <p class="lead">体験を1件入力し、複数の evidence を添付します。保存時に Storage、evidence_files、narratives へ登録します。</p>
+  </section>
+</header>
+
+<main class="grid">
+<section>
+  <section class="card">
+    <h2>イベント情報</h2>
+    <div class="eventMeta">
+      <div>event_name：<strong id="currentEventName">取得中…</strong></div>
+      <div>主催者：<strong id="currentOrganizer">未設定</strong></div>
+      <div>説明：<strong id="currentDescription">取得中…</strong></div>
+      <div>初期詳細度：<strong id="currentDefaultDetail">recommended</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>入力詳細度</h2>
+    <div class="pillSet">
+      <label class="pill"><input type="radio" name="detailLevel" value="simple" /><span><b>簡易版</b><small>必須項目と evidence 添付のみ。</small></span></label>
+      <label class="pill"><input type="radio" name="detailLevel" value="recommended" /><span><b>推奨版</b><small>分析に効くタグとナラティブの種まで。</small></span></label>
+      <label class="pill"><input type="radio" name="detailLevel" value="detailed" /><span><b>詳細版</b><small>evidenceごとのOAIS系メタデータまで。</small></span></label>
+    </div>
+  </section>
+
+  <form id="narrativeForm">
+    <section class="card">
+      <h2>基本情報</h2>
+      <div class="row">
+        <div><label for="title">短いタイトル<span class="req">必須</span></label><input id="title" required placeholder="例：五毛座の前で地元の人と立ち話をした" /></div>
+        <div class="row two">
+          <div><label for="placeName">場所名<span class="req">必須</span></label><input id="placeName" required placeholder="例：岐阜県恵那市飯地町 五毛座付近" /></div>
+          <div><label for="startAt">開始日時<span class="req">必須</span></label><input id="startAt" type="datetime-local" required /></div>
+        </div>
+        <div class="row two" data-level="recommended">
+          <div><label for="lat">緯度</label><input id="lat" type="number" step="0.000001" /></div>
+          <div><label for="lon">経度</label><input id="lon" type="number" step="0.000001" /></div>
+        </div>
+        <div class="row two" data-level="recommended">
+          <div><label for="endAt">終了日時</label><input id="endAt" type="datetime-local" /></div>
+          <div><label for="mapHint">地図ヒントURL</label><input id="mapHint" /></div>
+        </div>
+        <div><label for="whatHappened">何があったか<span class="req">必須</span></label><textarea id="whatHappened" required></textarea></div>
+      </div>
+    </section>
+
+    <section class="card" data-level="recommended">
+      <h2>主体・行為</h2>
+      <div class="row">
+        <div><label>誰がいた</label><div class="chips" data-checks="actors">
+          <label class="chip"><input type="checkbox" value="local_resident">地元の人</label><label class="chip"><input type="checkbox" value="tourist">観光客</label><label class="chip"><input type="checkbox" value="staff">スタッフ</label><label class="chip"><input type="checkbox" value="student">学生</label><label class="chip"><input type="checkbox" value="child">子ども</label><label class="chip"><input type="checkbox" value="elderly">高齢者</label><label class="chip"><input type="checkbox" value="other">その他</label>
+        </div></div>
+        <div><label for="actorsNote">主体メモ</label><textarea id="actorsNote"></textarea></div>
+        <div><label>何をした</label><div class="chips" data-checks="actions">
+          <label class="chip"><input type="checkbox" value="walk">歩く</label><label class="chip"><input type="checkbox" value="watch">見る</label><label class="chip"><input type="checkbox" value="listen">聞く</label><label class="chip"><input type="checkbox" value="talk">話す</label><label class="chip"><input type="checkbox" value="take_photo">撮る</label><label class="chip"><input type="checkbox" value="touch">触る</label><label class="chip"><input type="checkbox" value="other">その他</label>
+        </div></div>
+        <div class="row two"><div><label for="stayMin">滞在時間（分）</label><input id="stayMin" type="number" min="0" step="1" /></div><div><label for="crowd">混雑度</label><select id="crowd"><option value="">未選択</option><option value="low">少ない</option><option value="mid">普通</option><option value="high">多い</option></select></div></div>
+      </div>
+    </section>
+
+    <section class="card" data-level="recommended">
+      <h2>環境・感覚</h2>
+      <div class="row two">
+        <div><label for="weather">天候</label><select id="weather"><option value="">未選択</option><option value="sunny">晴</option><option value="cloudy">曇</option><option value="rain">雨</option><option value="snow">雪</option><option value="windy">風</option><option value="other">その他</option></select></div>
+        <div><label for="mood">雰囲気</label><select id="mood"><option value="">未選択</option><option value="lively">賑やか</option><option value="calm">落ち着いた</option><option value="tense">緊張感</option><option value="festive">祝祭感</option><option value="mysterious">不思議</option><option value="warm_contrast">寒い中で温かい</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label>音の種類</label><div class="chips" data-checks="soundTags"><label class="chip"><input type="checkbox" value="voices">人声</label><label class="chip"><input type="checkbox" value="music">音楽</label><label class="chip"><input type="checkbox" value="traffic">交通</label><label class="chip"><input type="checkbox" value="nature">風・水・鳥</label><label class="chip"><input type="checkbox" value="silence">静けさ</label><label class="chip"><input type="checkbox" value="other">その他</label></div></div>
+        <div><label for="envNote">環境メモ</label><textarea id="envNote"></textarea></div>
+      </div>
+    </section>
+
+    <section class="card" data-level="recommended">
+      <h2>ナラティブの種</h2>
+      <div class="row two">
+        <div><label for="surprise">予想と違ったこと</label><textarea id="surprise"></textarea></div>
+        <div><label for="turningPoint">印象が変わった瞬間</label><textarea id="turningPoint"></textarea></div>
+        <div><label for="afterFeeling">最後にどう感じたか</label><textarea id="afterFeeling"></textarea></div>
+        <div><label for="keywords">キーワード</label><input id="keywords" placeholder="五毛座, 地歌舞伎, 語り" /></div>
+      </div>
+    </section>
+
+    <section class="card" data-level="recommended">
+      <h2>第1層語彙</h2>
+      <div class="chips" data-checks="layer1Terms" id="layer1Terms"></div>
+    </section>
+
+    <section class="card">
+      <div class="evidenceHeader"><h2>Evidence</h2><button id="btnAddEvidence" type="button">evidenceを追加</button></div>
+      <div class="hint">保存時に各ファイルを Storage の uploads bucket にアップロードし、evidence_files にも登録します。</div>
+      <div id="evidenceList"></div>
+    </section>
+
+    <section class="card">
+      <h2>公開・由来</h2>
+      <div class="row two">
+        <div><label for="privacy">公開可否<span class="req">必須</span></label><select id="privacy" required><option value="">未選択</option><option value="public">公開可</option><option value="internal">内部利用</option><option value="private">非公開</option></select></div>
+        <div><label for="confidence">自信度</label><select id="confidence"><option value="">未選択</option><option value="sure">確か</option><option value="rough">だいたい</option><option value="guess">推測</option></select></div>
+      </div>
+      <div class="row two" style="margin-top:12px">
+        <div><label for="recorder">記録者</label><input id="recorder" /></div>
+        <div><label for="affiliation">所属</label><input id="affiliation" value="中部大学" /></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="actions">
+        <button id="btnSave" class="primary" type="submit">保存する</button>
+        <button id="btnGenerate" type="button">JSONだけ生成</button>
+        <button id="btnDownload" type="button">JSONをダウンロード</button>
+        <button id="btnClear" class="ghost" type="button">クリア</button>
+      </div>
+      <div id="status" class="status warn" style="margin-top:12px">まだ保存していません。</div>
+    </section>
+  </form>
+</section>
+
+<aside class="sticky">
+  <section class="card">
+    <h2>JSONプレビュー</h2>
+    <pre id="jsonPreview">{}</pre>
+  </section>
+</aside>
+</main>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://lilecmqnmilzviydnlwt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_hKj83fxX-DeyVbFN21dqQQ_Ooxbhqrt";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+const LAYER1 = ["Place","Object","Building","Landscape","Person","Organization","Community","Animal","Plant","Event","Activity","Performance","Ritual","Document","Image","Audio","Video","Model3D","Motion","VirtualSpace","Map","Environment","Sound","Smell","Weather","Season","Tradition","Knowledge","Narrative","Memory","Craft","Skill","FoodCulture","Route"];
+const EVIDENCE_TYPES = ["photo","video","audio","document","model_3d","gaussian_splat","point_cloud","motion_capture","gis","virtual_space","text_note","other"];
+const RELATIONS = ["primary","supporting","contextual","derived"];
+let config = {};
+let evidenceCount = 0;
+let lastJSON = null;
+let isSaving = false;
+
+function nowLocalISO(){const d=new Date();const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
+function simpleId(prefix="nar"){return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
+function safeName(name){return String(name||"file").replace(/[^a-zA-Z0-9._-]/g,"_")}
+function parseConfig(){const raw=location.hash?location.hash.slice(1):(location.search?location.search.slice(1):"");const p=new URLSearchParams(raw);return {event_record_id:p.get("event_id")||p.get("id")||p.get("event")||"",event_name:p.get("event_name")||"",detail:p.get("detail")||"recommended",bucket:p.get("bucket")||"uploads",organizer:p.get("organizer")||"",description:p.get("desc")||""}}
+function setStatus(text,kind="warn"){const el=$("status");el.textContent=text;el.className=`status ${kind}`}
+function checkedValues(name){return Array.from(document.querySelectorAll(`[data-checks="${name}"] input:checked`)).map(x=>x.value)}
+function parseKeywords(s){return (s||"").split(",").map(x=>x.trim()).filter(Boolean)}
+function numOrNull(id){const v=$(id).value;if(v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null}
+function val(id){return ($(id)?.value||"").trim()||null}
+function applyDetail(level){document.querySelectorAll("[data-level]").forEach(el=>{const l=el.dataset.level;const show=level==="detailed"||(level==="recommended"&&l!=="detailed")||(level==="simple"&&l==="simple");el.classList.toggle("hiddenLevel",!show)});document.querySelectorAll('input[name="detailLevel"]').forEach(r=>r.checked=r.value===level)}
+function renderLayer1(){const box=$("layer1Terms");box.innerHTML=LAYER1.map(t=>`<label class="chip"><input type="checkbox" value="${t}">${t}</label>`).join("")}
+function evidenceProfile(){return {"evidence_id":"required","type":"required","relation_to_experience":"required","path":"optional","name":"required","mime_type":"recommended","size":"recommended","bucket":"required","capture.capture_method":"recommended","capture.capture_date":"recommended","oais.representation_information.format":"recommended","semantic_layer1":"recommended"}}
+
+async function loadEventFromDB(){
+  if(!config.event_record_id && !config.event_name){setStatus("イベントIDまたはevent_nameがURLにありません。index.htmlで生成した参加者用URLから開いてください。","warn");return}
+  let query=supabase.from("events").select("id,event_name,description,detail_level,is_active,created_at").limit(1);
+  if(config.event_record_id){query=query.eq("id",config.event_record_id)}else{query=query.eq("event_name",config.event_name).order("created_at",{ascending:false})}
+  const {data,error}=await query;
+  if(error){console.error(error);setStatus(`イベント情報の取得に失敗しました。${error.message}`,"err");return}
+  if(!data||!data.length){setStatus("eventsテーブルに該当するイベントが見つかりませんでした。URLを確認してください。","warn");return}
+  const ev=data[0];config.event_record_id=ev.id;config.event_name=ev.event_name||config.event_name;config.description=ev.description||"";config.detail=ev.detail_level||config.detail||"recommended";config.is_active=ev.is_active;
+  $("currentEventName").textContent=config.event_name||"未設定";$("currentOrganizer").textContent=config.organizer||"未設定";$("currentDescription").textContent=config.description||"未設定";$("currentDefaultDetail").textContent=config.detail;
+  applyDetail(["simple","recommended","detailed"].includes(config.detail)?config.detail:"recommended");
+  setStatus(config.is_active===false?"このイベントは停止中です。":"eventsテーブルからイベント情報を取得しました。","ok");
+}
+
+function addEvidence(){
+  evidenceCount++; const id=`evidence_${evidenceCount}`; const wrap=document.createElement("div"); wrap.className="evidenceCard"; wrap.dataset.evidenceId=id;
+  wrap.innerHTML=`
+    <div class="evidenceHeader"><strong>Evidence ${evidenceCount}</strong><button type="button" class="danger" data-remove="${id}">削除</button></div>
+    <div class="row two" style="margin-top:10px">
+      <div><label>type<span class="req">必須</span></label><select data-field="type">${EVIDENCE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join("")}</select></div>
+      <div><label>relation_to_experience<span class="req">必須</span></label><select data-field="relation">${RELATIONS.map(r=>`<option value="${r}">${r}</option>`).join("")}</select></div>
+    </div>
+    <div class="row two" style="margin-top:10px">
+      <div><label>ファイル</label><input type="file" data-field="file" /></div>
+      <div><label>名称</label><input data-field="name" placeholder="ファイル名または資料名" /></div>
+    </div>
+    <div class="row two" data-level="detailed" style="margin-top:10px">
+      <div><label>capture_method</label><input data-field="capture_method" placeholder="scaniverse / smartphone_photo など" /></div>
+      <div><label>capture_date</label><input data-field="capture_date" type="date" /></div>
+    </div>
+    <div class="row two" data-level="detailed" style="margin-top:10px">
+      <div><label>format</label><input data-field="format" placeholder="JPEG / WAV / GLB / Gaussian Splatting dataset など" /></div>
+      <div><label>software</label><input data-field="software" placeholder="Scaniverse / Blender など" /></div>
+    </div>
+    <div data-level="detailed" style="margin-top:10px"><label>evidence 第1層語彙</label><div class="chips" data-evidence-layer1>${LAYER1.map(t=>`<label class="chip"><input type="checkbox" value="${t}">${t}</label>`).join("")}</div></div>
+    <div style="margin-top:10px"><label>note</label><textarea data-field="note" placeholder="この evidence の説明"></textarea></div>`;
+  $("evidenceList").appendChild(wrap); wrap.querySelector("[data-remove]").addEventListener("click",()=>wrap.remove()); applyDetail(document.querySelector('input[name="detailLevel"]:checked')?.value||"recommended");
+}
+
+function collectEvidence(){
+  return Array.from(document.querySelectorAll(".evidenceCard")).map((card,idx)=>{
+    const file=card.querySelector('[data-field="file"]').files?.[0]||null;
+    const name=card.querySelector('[data-field="name"]').value.trim()||file?.name||`evidence_${idx+1}`;
+    const layer1=Array.from(card.querySelectorAll('[data-evidence-layer1] input:checked')).map(x=>x.value);
+    return {
+      _card:card,
+      _file:file,
+      evidence_id:simpleId("evd"),metadata_profile:evidenceProfile(),
+      type:card.querySelector('[data-field="type"]').value,
+      relation_to_experience:card.querySelector('[data-field="relation"]').value,
+      path:null,name,mime_type:file?.type||null,size:file?.size||null,bucket:config.bucket||"uploads",
+      capture:{capture_method:card.querySelector('[data-field="capture_method"]')?.value.trim()||null,capture_date:card.querySelector('[data-field="capture_date"]')?.value||null,captured_by:val("recorder"),device:null,software:card.querySelector('[data-field="software"]')?.value.trim()||null},
+      oais:{information_package_role:"content_information",representation_information:{format:card.querySelector('[data-field="format"]')?.value.trim()||file?.type||null,software:card.querySelector('[data-field="software"]')?.value.trim()||null,hardware:null,technical_note:null},preservation_description_information:{provenance:"field_or_related_capture",context:"体験ナラティブに接続されたevidence",reference:null,fixity:{checksum_algorithm:null,checksum:null},access_rights:val("privacy")}},
+      semantic_layer1:{terms:layer1},note:card.querySelector('[data-field="note"]').value.trim()||null
+    };
+  });
+}
+
+function publicEvidence(e){const x={...e};delete x._file;delete x._card;return x}
+function buildJSON(evidenceOverride=null){
+  const eventId=simpleId("nar"); const layer1=checkedValues("layer1Terms"); const evidence = evidenceOverride || collectEvidence().map(publicEvidence);
+  return {schema:"town-experience-proto-narrative-form@0.3",metadata_profile:{schema:"required",event_id:"required",event_name:"recommended",title:"required","place.name":"required","place.lat":"recommended","place.lon":"recommended","time.start_at":"required","experience.what_happened":"required",semantic_layer1:"recommended",evidence:"recommended","provenance.privacy":"required",created_at:"required"},event_id:eventId,event_record_id:config.event_record_id||null,event_name:config.event_name||null,title:val("title"),place:{name:val("placeName"),lat:numOrNull("lat"),lon:numOrNull("lon"),map_hint:val("mapHint")},time:{start_at:val("startAt"),end_at:val("endAt")},experience:{what_happened:val("whatHappened"),actors:{tags:checkedValues("actors"),note:val("actorsNote")},actions:{tags:checkedValues("actions"),stay_minutes:numOrNull("stayMin"),crowd:val("crowd")},environment:{weather:val("weather"),mood:val("mood"),sound_tags:checkedValues("soundTags"),note:val("envNote")},narrative_seeds:{surprise:val("surprise"),turning_point:val("turningPoint"),after_feeling:val("afterFeeling"),keywords:parseKeywords(val("keywords"))}},semantic_layer1:{scheme:"international_common_layer",terms:layer1.map(label=>({label,confidence:null,source:"human"}))},evidence,ambient_sound_reference:{mode:"spatiotemporal_match",radius_m:50,time_window_minutes:30,preferred_source:"sound_data_archive"},annotations:{layer2_narratives:[],layer3_local_terms:[],status:"not_generated",generated_at:null,generator:null},provenance:{source_type:"direct",confidence:val("confidence"),privacy:val("privacy"),recorder:val("recorder"),affiliation:val("affiliation"),notes:null},created_at:new Date().toISOString(),updated_at:null};
+}
+function updatePreview(obj){lastJSON=obj;$("jsonPreview").textContent=JSON.stringify(obj,null,2)}
+
+async function uploadEvidenceFiles(evidenceList,narrativeEventId){
+  const uploaded=[];
+  for(let i=0;i<evidenceList.length;i++){
+    const e=evidenceList[i];
+    if(!e._file){uploaded.push(publicEvidence(e));continue;}
+    setStatus(`ファイルをアップロード中 ${i+1}/${evidenceList.length}: ${e._file.name}`,"warn");
+    const path=`evidence/${config.event_record_id}/${narrativeEventId}/${e.evidence_id}_${Date.now()}_${safeName(e._file.name)}`;
+    const {error}=await supabase.storage.from(e.bucket).upload(path,e._file,{upsert:false});
+    if(error) throw new Error(`Storage upload failed: ${error.message}`);
+    e.path=path;
+    uploaded.push(publicEvidence(e));
+  }
+  return uploaded;
+}
+
+async function saveNarrative(){
+  if(isSaving) return;
+  if(!config.event_record_id) throw new Error("event_id がありません。index.htmlで生成したURLから開いてください。");
+  if(!$('narrativeForm').reportValidity()) return;
+  isSaving=true; $("btnSave").disabled=true;
+  try{
+    const rawEvidence=collectEvidence();
+    const tempNarrativeId=simpleId("nar");
+    const uploadedEvidence=await uploadEvidenceFiles(rawEvidence,tempNarrativeId);
+    const payload=buildJSON(uploadedEvidence);
+    payload.event_id=tempNarrativeId;
+    updatePreview(payload);
+
+    setStatus("narratives に保存中…","warn");
+    const {data:narrativeRows,error:narrativeError}=await supabase
+      .from("narratives")
+      .insert({event_id:config.event_record_id,detail_level:document.querySelector('input[name="detailLevel"]:checked')?.value||"recommended",privacy:payload.provenance.privacy,payload,recorder:payload.provenance.recorder})
+      .select("id")
+      .single();
+    if(narrativeError) throw new Error(`narratives insert failed: ${narrativeError.message}`);
+    const narrativeId=narrativeRows.id;
+
+    if(uploadedEvidence.length){
+      setStatus("evidence_files に保存中…","warn");
+      const rows=uploadedEvidence.map(e=>({event_id:config.event_record_id,narrative_id:narrativeId,evidence_id:e.evidence_id,type:e.type,relation_to_experience:e.relation_to_experience,bucket:e.bucket,path:e.path,name:e.name,mime_type:e.mime_type,size:e.size,payload:e,ai_status:"not_processed"}));
+      const {error:evidenceError}=await supabase.from("evidence_files").insert(rows);
+      if(evidenceError) throw new Error(`evidence_files insert failed: ${evidenceError.message}`);
+    }
+    setStatus(`保存成功。narrative_id: ${narrativeId}`,"ok");
+  }catch(err){console.error(err);setStatus(`保存失敗：${err.message}`,"err");}
+  finally{isSaving=false;$("btnSave").disabled=false;}
+}
+
+function downloadJSON(){if(!lastJSON){setStatus("先にJSONを生成してください。","warn");return}const blob=new Blob([JSON.stringify(lastJSON,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`${lastJSON.event_id}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+
+window.addEventListener("DOMContentLoaded",async()=>{
+  config=parseConfig();$("startAt").value=nowLocalISO();renderLayer1();applyDetail(["simple","recommended","detailed"].includes(config.detail)?config.detail:"recommended");addEvidence();
+  document.querySelectorAll('input[name="detailLevel"]').forEach(r=>r.addEventListener("change",()=>applyDetail(r.value)));
+  $("btnAddEvidence").addEventListener("click",addEvidence);
+  $("narrativeForm").addEventListener("submit",e=>{e.preventDefault();saveNarrative()});
+  $("btnGenerate").addEventListener("click",()=>{if(!$("narrativeForm").reportValidity())return;const obj=buildJSON();updatePreview(obj);setStatus("JSONを生成しました。まだ保存していません。","ok")});
+  $("btnDownload").addEventListener("click",downloadJSON);
+  $("btnClear").addEventListener("click",()=>{if(confirm("入力をクリアしますか？"))location.reload()});
+  await loadEventFromDB();
+});
+</script>
+</body>
+</html>

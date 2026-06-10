@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NarrativeArchive Viewer</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#667085;--line:#d8deea;
+      --accent:#2563eb;--ok:#166534;--warn:#92400e;--danger:#b91c1c;
+      --shadow:0 12px 30px rgba(15,23,42,.08);--radius:18px
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#eef3ff,var(--bg));color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.7}
+    header,main{max-width:1180px;margin:0 auto;padding:18px}
+    header{padding-top:28px}
+    .hero{background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    h1{font-size:24px;margin:0 0 6px}.lead{color:var(--muted);margin:0;font-size:14px}
+    .grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;align-items:start}
+    @media(max-width:960px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+    .sticky{position:sticky;top:12px}@media(max-width:960px){.sticky{position:static}}
+    h2{font-size:17px;margin:0 0 12px} h3{font-size:16px;margin:0 0 8px}
+    label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}
+    input,select{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:11px 12px;font:inherit;color:var(--text)}
+    button{border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);padding:10px 14px;font-weight:700;cursor:pointer;min-height:42px}
+    button.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:transparent;color:#fff;width:100%}
+    .status{border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:13px;color:var(--muted);background:#fbfcff;white-space:pre-wrap}
+    .status.ok{color:var(--ok);border-color:rgba(22,101,52,.3);background:rgba(22,101,52,.05)}
+    .status.warn{color:var(--warn);border-color:rgba(146,64,14,.3);background:rgba(146,64,14,.05)}
+    .status.error{color:var(--danger);border-color:rgba(185,28,28,.3);background:rgba(185,28,28,.05)}
+    .meta{display:grid;gap:8px;font-size:13px;color:var(--muted)}.meta strong{color:var(--text)}
+    .row{display:grid;gap:10px}.row.two{grid-template-columns:1fr 1fr}@media(max-width:680px){.row.two{grid-template-columns:1fr}}
+    .list{display:grid;gap:14px}
+    .narrative{border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:var(--shadow);overflow:hidden}
+    .narrativeHead{padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcff}
+    .narrativeBody{padding:16px}
+    .title{font-size:18px;font-weight:800;margin:0 0 6px}
+    .small{font-size:12px;color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.chip{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12px;color:var(--muted);background:#fff}
+    .evidenceGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:10px}
+    .ev{border:1px solid var(--line);border-radius:14px;background:#fbfcff;overflow:hidden}
+    .ev .cap{padding:9px;font-size:12px;color:var(--muted);word-break:break-word}
+    .ev img{display:block;width:100%;height:150px;object-fit:cover;background:#eef3ff}
+    .ev audio,.ev video{display:block;width:100%;max-height:210px;background:#000}
+    .ev a{color:var(--accent);font-weight:700;text-decoration:none}
+    details{margin-top:10px} pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#dbeafe;border-radius:14px;padding:12px;font-size:12px;max-height:340px;overflow:auto}
+    .empty{border:1px dashed var(--line);border-radius:18px;padding:18px;color:var(--muted);background:#fff}
+  </style>
+</head>
+<body>
+<header>
+  <section class="hero">
+    <h1>NarrativeArchive Viewer</h1>
+    <p class="lead">公開設定（privacy: public）の体験ナラティブだけを表示します。</p>
+  </section>
+</header>
+
+<main class="grid">
+  <aside class="sticky">
+    <section class="card">
+      <h2>イベント</h2>
+      <div class="meta">
+        <div>event_name：<strong id="eventName">未設定</strong></div>
+        <div>説明：<strong id="eventDescription">未設定</strong></div>
+        <div>event_id：<strong id="eventId" class="small">未設定</strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>読み込み設定</h2>
+      <div class="row">
+        <div>
+          <label for="eventInput">event_id</label>
+          <input id="eventInput" placeholder="URLに event_id が無い場合に入力" />
+        </div>
+        <div>
+          <label for="limitInput">表示件数</label>
+          <input id="limitInput" type="number" min="1" max="200" value="50" />
+        </div>
+        <button class="primary" id="btnLoad" type="button">公開ナラティブを読み込む</button>
+        <div id="status" class="status warn">未読み込み</div>
+      </div>
+    </section>
+  </aside>
+
+  <section>
+    <section class="card">
+      <h2>公開ナラティブ一覧</h2>
+      <div id="list" class="list"></div>
+    </section>
+  </section>
+</main>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://lilecmqnmilzviydnlwt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_hKj83fxX-DeyVbFN21dqQQ_Ooxbhqrt";
+const BUCKET_DEFAULT = "uploads";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let currentEventId = "";
+let eventInfo = null;
+
+function parseParams(){
+  const raw = location.hash ? location.hash.slice(1) : (location.search ? location.search.slice(1) : "");
+  const p = new URLSearchParams(raw);
+  return { event_id: p.get("event_id") || p.get("id") || p.get("event") || "" };
+}
+function setStatus(text, kind="warn"){
+  const el=$("status"); el.textContent=text; el.className=`status ${kind}`;
+}
+function fmtTime(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  if(Number.isNaN(d.getTime())) return String(ts);
+  return d.toLocaleString("ja-JP", { timeZone:"Asia/Tokyo" });
+}
+function safe(v){ return v == null ? "" : String(v); }
+function getPublicUrl(bucket, path){
+  if(!bucket || !path) return "";
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data?.publicUrl || "";
+}
+function chip(text){
+  const span=document.createElement("span"); span.className="chip"; span.textContent=text; return span;
+}
+async function loadEvent(eventId){
+  const { data, error } = await supabase
+    .from("events")
+    .select("id,event_name,description,detail_level,is_active,created_at")
+    .eq("id", eventId)
+    .limit(1)
+    .maybeSingle();
+  if(error) throw new Error(`イベント取得失敗：${error.message}`);
+  if(!data) throw new Error("イベントが見つかりません。");
+  eventInfo = data;
+  currentEventId = data.id;
+  $("eventName").textContent = data.event_name || "未設定";
+  $("eventDescription").textContent = data.description || "未設定";
+  $("eventId").textContent = data.id;
+  $("eventInput").value = data.id;
+}
+async function loadNarratives(){
+  const eventId = ($("eventInput").value || currentEventId || "").trim();
+  if(!eventId){ setStatus("event_id がありません。URLまたは入力欄で指定してください。", "error"); return; }
+  const limit = Math.max(1, Math.min(200, Number($("limitInput").value || 50)));
+  setStatus("読み込み中…", "warn");
+  $("list").innerHTML = "";
+
+  await loadEvent(eventId);
+
+  const { data: narratives, error: nerr } = await supabase
+    .from("narratives")
+    .select("id,event_id,detail_level,privacy,payload,recorder,created_at,updated_at")
+    .eq("event_id", eventId)
+    .eq("privacy", "public")
+    .order("created_at", { ascending:false })
+    .limit(limit);
+  if(nerr) throw new Error(`ナラティブ取得失敗：${nerr.message}`);
+
+  if(!narratives || !narratives.length){
+    $("list").innerHTML = `<div class="empty">公開設定のナラティブはまだありません。</div>`;
+    setStatus("公開ナラティブ：0件", "ok");
+    return;
+  }
+
+  const ids = narratives.map(n => n.id);
+  const { data: evidence, error: eerr } = await supabase
+    .from("evidence_files")
+    .select("id,event_id,narrative_id,evidence_id,type,relation_to_experience,bucket,path,name,mime_type,size,payload,ai_status,created_at")
+    .in("narrative_id", ids)
+    .order("created_at", { ascending:true });
+  if(eerr) throw new Error(`evidence取得失敗：${eerr.message}`);
+
+  const evMap = new Map();
+  (evidence || []).forEach(ev => {
+    if(!evMap.has(ev.narrative_id)) evMap.set(ev.narrative_id, []);
+    evMap.get(ev.narrative_id).push(ev);
+  });
+
+  narratives.forEach(n => renderNarrative(n, evMap.get(n.id) || []));
+  setStatus(`公開ナラティブ：${narratives.length}件`, "ok");
+}
+function renderNarrative(row, evidences){
+  const p = row.payload || {};
+  const title = p.title || "無題";
+  const place = p.place?.name || "場所未設定";
+  const start = p.time?.start_at || row.created_at;
+  const what = p.experience?.what_happened || "";
+  const layerTerms = Array.isArray(p.semantic_layer1?.terms) ? p.semantic_layer1.terms : [];
+  const keywords = Array.isArray(p.experience?.narrative_seeds?.keywords) ? p.experience.narrative_seeds.keywords : [];
+
+  const wrap=document.createElement("article");
+  wrap.className="narrative";
+
+  const head=document.createElement("div");
+  head.className="narrativeHead";
+  head.innerHTML = `<p class="title"></p><div class="small">${safe(place)} / ${fmtTime(start)} / recorder: ${safe(row.recorder || p.provenance?.recorder || "")}</div>`;
+  head.querySelector(".title").textContent = title;
+
+  const chips=document.createElement("div"); chips.className="chips";
+  keywords.forEach(k => chips.appendChild(chip(`#${k}`)));
+  layerTerms.forEach(t => chips.appendChild(chip(`L1:${typeof t === "string" ? t : t.label}`)));
+  if(chips.children.length) head.appendChild(chips);
+
+  const body=document.createElement("div");
+  body.className="narrativeBody";
+  const whatP=document.createElement("p"); whatP.textContent=what; body.appendChild(whatP);
+
+  if(evidences.length){
+    const h=document.createElement("h3"); h.textContent="Evidence"; body.appendChild(h);
+    const grid=document.createElement("div"); grid.className="evidenceGrid";
+    evidences.forEach(ev => grid.appendChild(renderEvidence(ev)));
+    body.appendChild(grid);
+  }
+
+  const details=document.createElement("details");
+  details.innerHTML = `<summary>JSONを表示</summary><pre></pre>`;
+  details.querySelector("pre").textContent = JSON.stringify(p, null, 2);
+  body.appendChild(details);
+
+  wrap.appendChild(head); wrap.appendChild(body); $("list").appendChild(wrap);
+}
+function renderEvidence(ev){
+  const box=document.createElement("div"); box.className="ev";
+  const url = getPublicUrl(ev.bucket || BUCKET_DEFAULT, ev.path);
+  const mime = ev.mime_type || ev.payload?.mime_type || "";
+  const type = ev.type || "other";
+  const name = ev.name || ev.payload?.name || ev.evidence_id || "evidence";
+
+  if(url && (type === "photo" || mime.startsWith("image/"))){
+    const img=document.createElement("img"); img.src=url; img.alt=name; img.loading="lazy"; box.appendChild(img);
+  }else if(url && (type === "audio" || mime.startsWith("audio/"))){
+    const audio=document.createElement("audio"); audio.controls=true; audio.src=url; box.appendChild(audio);
+  }else if(url && (type === "video" || mime.startsWith("video/"))){
+    const video=document.createElement("video"); video.controls=true; video.src=url; box.appendChild(video);
+  }
+
+  const cap=document.createElement("div"); cap.className="cap";
+  const link = url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${safe(name)}</a>` : safe(name);
+  cap.innerHTML = `${link}<br><span>${safe(type)} / ${safe(ev.relation_to_experience)} / ${safe(mime)}</span>`;
+  box.appendChild(cap);
+  return box;
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  const p = parseParams();
+  if(p.event_id){ currentEventId = p.event_id; $("eventInput").value = p.event_id; }
+  $("btnLoad").addEventListener("click", () => loadNarratives().catch(err => { console.error(err); setStatus(err.message, "error"); }));
+  if(currentEventId){
+    loadNarratives().catch(err => { console.error(err); setStatus(err.message, "error"); });
+  }else{
+    setStatus("event_id を入力するか、index.html から生成された閲覧URLで開いてください。", "warn");
+  }
+});
+</script>
+</body>
+</html>
