@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>近隣気象台・観測ポイント検索</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #607087;
+      --line: #d8e0ea;
+      --accent: #1769aa;
+      --danger: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 20px 24px;
+      background: #102a43;
+      color: #fff;
+    }
+
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 1.35rem;
+    }
+
+    header p {
+      margin: 0;
+      color: #cbd8e6;
+      font-size: 0.92rem;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: auto;
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field { grid-column: span 3; }
+    .field.small { grid-column: span 2; }
+    .actions {
+      grid-column: span 2;
+      display: flex;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    input, select, button {
+      width: 100%;
+      border: 1px solid #b9c5d3;
+      border-radius: 9px;
+      padding: 10px 11px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary { background: #51657a; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .hint, .status {
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .status {
+      min-height: 1.4em;
+    }
+
+    .status.error { color: var(--danger); }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 11px;
+      background: #f9fbfd;
+    }
+
+    .metric span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .metric b {
+      display: block;
+      margin-top: 3px;
+      font-size: 1.2rem;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+      gap: 16px;
+    }
+
+    #map {
+      height: 590px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .list {
+      max-height: 590px;
+      overflow: auto;
+    }
+
+    .station {
+      margin-bottom: 9px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .station:hover { border-color: #7ca7cc; }
+
+    .rank {
+      display: inline-grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: #e7f1fa;
+      color: #155b91;
+      font-weight: 800;
+    }
+
+    .station-name { font-weight: 800; }
+
+    .distance {
+      float: right;
+      color: #155b91;
+      font-weight: 800;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    @media (max-width: 800px) {
+      .field, .field.small, .actions { grid-column: span 12; }
+      .content { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      #map { height: 420px; }
+      .list { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>近隣気象台・観測ポイント検索</h1>
+    <p>地図をクリックするか緯度・経度を入力し、近い観測地点を検索します。</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="search-grid">
+        <div class="field">
+          <label for="latitude">緯度</label>
+          <input id="latitude" type="number" step="0.000001" value="35.170915">
+        </div>
+
+        <div class="field">
+          <label for="longitude">経度</label>
+          <input id="longitude" type="number" step="0.000001" value="136.881537">
+        </div>
+
+        <div class="field small">
+          <label for="radius">検索半径</label>
+          <select id="radius">
+            <option value="10">10 km</option>
+            <option value="25">25 km</option>
+            <option value="50" selected>50 km</option>
+            <option value="100">100 km</option>
+            <option value="200">200 km</option>
+          </select>
+        </div>
+
+        <div class="field small">
+          <label for="limit">表示件数</label>
+          <select id="limit">
+            <option value="5">5件</option>
+            <option value="10" selected>10件</option>
+            <option value="20">20件</option>
+            <option value="50">50件</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button id="searchBtn" type="button">検索</button>
+          <button id="locateBtn" class="secondary" type="button">現在地</button>
+        </div>
+      </div>
+
+      <p class="hint">地図をクリックすると、その地点の緯度・経度が自動入力されます。赤いマーカーはドラッグできます。</p>
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="summary">
+      <div class="metric"><span>検索緯度</span><b id="metricLat">—</b></div>
+      <div class="metric"><span>検索経度</span><b id="metricLon">—</b></div>
+      <div class="metric"><span>半径内の地点</span><b id="metricCount">—</b></div>
+      <div class="metric"><span>最寄り地点</span><b id="metricNearest">—</b></div>
+    </section>
+
+    <section class="content">
+      <div id="map" aria-label="気象観測地点の地図"></div>
+      <div id="results" class="panel list">
+        <div class="empty">地図上の地点を選び、「検索」を押してください。</div>
+      </div>
+    </section>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+
+  <script>
+    "use strict";
+
+    const SUPABASE_URL = "https://lilecmqnmilzviydnlwt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_hKj83fxX-DeyVbFN21dqQQ_Ooxbhqrt";
+    const TABLE_NAME = "weather_stations";
+
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $("status");
+
+    let map;
+    let searchMarker;
+    let radiusCircle;
+    let stationLayer;
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.className = isError ? "status error" : "status";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = (degrees) => degrees * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function initMap() {
+      map = L.map("map").setView([35.170915, 136.881537], 7);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+
+      stationLayer = L.layerGroup().addTo(map);
+      setSearchPoint(35.170915, 136.881537, false);
+
+      map.on("click", (event) => {
+        const lat = Number(event.latlng.lat.toFixed(6));
+        const lon = Number(event.latlng.lng.toFixed(6));
+        setSearchPoint(lat, lon, true);
+        setStatus(`地図上の地点を選択しました：${lat}, ${lon}`);
+      });
+    }
+
+    function setSearchPoint(lat, lon, panMap = true) {
+      $("latitude").value = lat.toFixed(6);
+      $("longitude").value = lon.toFixed(6);
+
+      if (!searchMarker) {
+        searchMarker = L.marker([lat, lon], {
+          draggable: true,
+          title: "検索地点"
+        }).addTo(map);
+
+        searchMarker.on("dragend", (event) => {
+          const point = event.target.getLatLng();
+          const newLat = Number(point.lat.toFixed(6));
+          const newLon = Number(point.lng.toFixed(6));
+          setSearchPoint(newLat, newLon, false);
+          setStatus(`検索地点を移動しました：${newLat}, ${newLon}`);
+        });
+      } else {
+        searchMarker.setLatLng([lat, lon]);
+      }
+
+      searchMarker
+        .bindPopup(`検索地点<br>緯度：${lat.toFixed(6)}<br>経度：${lon.toFixed(6)}`);
+
+      const radiusKm = Number($("radius").value);
+      if (radiusCircle) {
+        radiusCircle.setLatLng([lat, lon]).setRadius(radiusKm * 1000);
+      } else {
+        radiusCircle = L.circle([lat, lon], {
+          radius: radiusKm * 1000,
+          color: "#1769aa",
+          weight: 2,
+          fillOpacity: 0.06
+        }).addTo(map);
+      }
+
+      if (panMap) map.panTo([lat, lon]);
+    }
+
+    function readInputs() {
+      const lat = Number($("latitude").value);
+      const lon = Number($("longitude").value);
+      const radius = Number($("radius").value);
+      const limit = Number($("limit").value);
+
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+        throw new Error("緯度は -90〜90 の範囲で入力してください。");
+      }
+
+      if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+        throw new Error("経度は -180〜180 の範囲で入力してください。");
+      }
+
+      return { lat, lon, radius, limit };
+    }
+
+    async function fetchAllStations() {
+      const pageSize = 1000;
+      const rows = [];
+
+      for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1;
+        const endpoint =
+          `${SUPABASE_URL}/rest/v1/${TABLE_NAME}` +
+          `?select=*&order=station_id.asc`;
+
+        const response = await fetch(endpoint, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            Range: `${from}-${to}`,
+            Prefer: "count=exact"
+          }
+        });
+
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(`Supabase取得エラー（${response.status}）：${body}`);
+        }
+
+        const page = await response.json();
+        rows.push(...page);
+
+        if (page.length < pageSize) break;
+      }
+
+      return rows;
+    }
+
+    function getAltitude(station) {
+      const value =
+        station.altitude_m ??
+        station.elevation_m ??
+        station.altitude ??
+        station.elevation;
+
+      return value === null || value === undefined || value === ""
+        ? null
+        : Number(value);
+    }
+
+    function renderResults(stations, totalWithin, searchPoint) {
+      $("metricLat").textContent = searchPoint.lat.toFixed(6);
+      $("metricLon").textContent = searchPoint.lon.toFixed(6);
+      $("metricCount").textContent = `${totalWithin}地点`;
+      $("metricNearest").textContent =
+        stations.length > 0
+          ? `${stations[0].station_name ?? stations[0].name ?? "名称不明"}`
+          : "該当なし";
+
+      stationLayer.clearLayers();
+
+      if (stations.length === 0) {
+        $("results").innerHTML =
+          '<div class="empty">指定した半径内に観測地点がありません。</div>';
+        return;
+      }
+
+      $("results").innerHTML = stations.map((station, index) => {
+        const name = station.station_name ?? station.name ?? "名称不明";
+        const region =
+          station.region ??
+          station.area_name ??
+          station.prefecture ??
+          station.fuken_name ??
+          "不明";
+        const altitude = getAltitude(station);
+        const stationId = station.station_id ?? station.id ?? "—";
+        const precNo = station.prec_no ?? "—";
+        const blockNo = station.block_no ?? "—";
+
+        return `
+          <article class="station" data-index="${index}">
+            <span class="rank">${index + 1}</span>
+            <span class="station-name">${escapeHtml(name)}</span>
+            <span class="distance">${station.distance_km.toFixed(2)} km</span>
+            <div class="meta">
+              <span>地域：${escapeHtml(region)}</span>
+              <span>標高：${altitude === null || Number.isNaN(altitude) ? "不明" : `${altitude} m`}</span>
+              <span>緯度：${station.latitude.toFixed(6)}</span>
+              <span>経度：${station.longitude.toFixed(6)}</span>
+              <span>地点ID：${escapeHtml(stationId)}</span>
+              <span>prec/block：${escapeHtml(precNo)} / ${escapeHtml(blockNo)}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      stations.forEach((station, index) => {
+        const name = station.station_name ?? station.name ?? "名称不明";
+        const marker = L.circleMarker([station.latitude, station.longitude], {
+          radius: 7,
+          color: "#155b91",
+          fillColor: "#1769aa",
+          fillOpacity: 0.85,
+          weight: 2
+        })
+          .bindPopup(
+            `<strong>${escapeHtml(name)}</strong><br>` +
+            `検索地点から ${station.distance_km.toFixed(2)} km`
+          )
+          .addTo(stationLayer);
+
+        station._marker = marker;
+
+        const item = document.querySelector(`.station[data-index="${index}"]`);
+        item.addEventListener("click", () => {
+          map.setView([station.latitude, station.longitude], Math.max(map.getZoom(), 11));
+          marker.openPopup();
+        });
+      });
+    }
+
+    async function search() {
+      const button = $("searchBtn");
+
+      try {
+        button.disabled = true;
+        setStatus("観測地点を取得しています…");
+
+        const input = readInputs();
+        setSearchPoint(input.lat, input.lon, false);
+
+        const rawStations = await fetchAllStations();
+
+        const allStations = rawStations
+          .map((station) => ({
+            ...station,
+            latitude: Number(station.latitude),
+            longitude: Number(station.longitude)
+          }))
+          .filter((station) =>
+            Number.isFinite(station.latitude) &&
+            Number.isFinite(station.longitude)
+          )
+          .map((station) => ({
+            ...station,
+            distance_km: haversine(
+              input.lat,
+              input.lon,
+              station.latitude,
+              station.longitude
+            )
+          }));
+
+        const within = allStations
+          .filter((station) => station.distance_km <= input.radius)
+          .sort((a, b) => a.distance_km - b.distance_km);
+
+        const shown = within.slice(0, input.limit);
+
+        renderResults(shown, within.length, input);
+        setStatus(
+          `${rawStations.length}件を取得し、半径${input.radius}km以内に${within.length}地点見つかりました。`
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    $("searchBtn").addEventListener("click", search);
+
+    ["latitude", "longitude", "radius", "limit"].forEach((id) => {
+      $(id).addEventListener("keydown", (event) => {
+        if (event.key === "Enter") search();
+      });
+    });
+
+    $("radius").addEventListener("change", () => {
+      const lat = Number($("latitude").value);
+      const lon = Number($("longitude").value);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        setSearchPoint(lat, lon, false);
+      }
+    });
+
+    $("locateBtn").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        setStatus("このブラウザでは現在地取得を利用できません。", true);
+        return;
+      }
+
+      setStatus("現在地を取得しています…");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = Number(position.coords.latitude.toFixed(6));
+          const lon = Number(position.coords.longitude.toFixed(6));
+          setSearchPoint(lat, lon, true);
+          setStatus("現在地を入力しました。「検索」を押してください。");
+        },
+        (error) => {
+          setStatus(`現在地を取得できませんでした：${error.message}`, true);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000
+        }
+      );
+    });
+
+    initMap();
+  </script>
+</body>
+</html>
